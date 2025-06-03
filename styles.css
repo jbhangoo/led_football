@@ -1,0 +1,159 @@
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: #888;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.game-console {
+    background: #666;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 3px solid #555;
+}
+
+.game-title {
+    text-align: center;
+    color: #ff4444;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #ff4444;
+}
+
+/* Field of play */
+.led-display {
+    background: #000;
+    width: 400px;
+    height: 170px;
+    border: 4px solid #444;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.field-line {
+    position: absolute;
+    background: #333;
+    height: 100%;
+    width: 2px;
+}
+
+.yard-10 { left: 40px; }
+.yard-20 { left: 80px; }
+.yard-30 { left: 120px; }
+.yard-40 { left: 160px; }
+.yard-50 { left: 200px; }
+.yard-60 { left: 240px; }
+.yard-70 { left: 280px; }
+.yard-80 { left: 320px; }
+.yard-90 { left: 360px; }
+
+.led {
+    position: absolute;
+    width: 16px;
+    height: 4px;
+    background: #ff0000;
+    border-radius: 2px;
+    box-shadow: 0 0 8px #ff0000;
+    transition: all 0.1s ease;
+}
+
+.led.off {
+    background: #330000;
+    box-shadow: none;
+}
+
+.led.player {
+    background: #00ff00;
+    box-shadow: 0 0 8px #00ff00;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 10px;
+    width: 200px;
+    height: 200px;
+    margin: 20px 0;
+}
+
+.control-btn {
+    background: #444;
+    border: 3px solid #666;
+    border-radius: 15px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn:hover {
+    background: #555;
+    border-color: #777;
+}
+
+.control-btn:active {
+    background: #666;
+    transform: scale(0.95);
+}
+
+.control-btn.up { grid-column: 2; grid-row: 1; }
+.control-btn.left { grid-column: 1; grid-row: 2; }
+.control-btn.right { grid-column: 3; grid-row: 2; }
+.control-btn.down { grid-column: 2; grid-row: 3; }
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    width: 400px;
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.score {
+    color: #00ff00;
+}
+
+.downs {
+    color: #ffff00;
+}
+
+.yards {
+    color: #00ffff;
+}
+
+.game-over {
+    text-align: center;
+    color: #ff4444;
+    font-size: 30px;
+    margin: 20px 0;
+}
+
+.start-btn {
+    background: #ff4444;
+    border: none;
+    color: white;
+    padding: 15px 30px;
+    font-size: 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 10px;
+}
+
+.start-btn:hover {
+    background: #ff6666;
+}

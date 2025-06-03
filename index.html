@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Electronic Football</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-console">
+        <div class="game-title">LED ELECTRONIC FOOTBALL</div>
+        
+        <div class="game-info">
+            <div class="score">SCORE: <span id="score">0</span></div>
+            <div class="downs">DOWN: <span id="downs">1</span></div>
+            <div class="yards">YARDS TO GO: <span id="yards">10</span></div>
+        </div>
+
+        <div class="led-display" id="display">
+            <div class="field-line yard-10"></div>
+            <div class="field-line yard-20"></div>
+            <div class="field-line yard-30"></div>
+            <div class="field-line yard-40"></div>
+            <div class="field-line yard-50"></div>
+            <div class="field-line yard-60"></div>
+            <div class="field-line yard-70"></div>
+            <div class="field-line yard-80"></div>
+            <div class="field-line yard-90"></div>
+        </div>
+
+        <table>
+            <tr>
+                <td>
+                    <div class="controls">
+                        <button class="control-btn up" id="up">↑</button>
+                        <button class="control-btn left" id="left">←</button>
+                        <button class="control-btn right" id="right">→</button>
+                        <button class="control-btn down" id="down">↓</button>
+                    </div>
+                </td>
+                <td>
+                    <div id="gameOver" class="game-over" style="height: 20px;"></div>
+                    <div style="height: 100px;"></div>
+                    <button class="start-btn" id="startBtn" onclick="startGame()">NEW GAME</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <script type="text/javascript" src="blinker.js"></script>
+    <script type="text/javascript" src="script.js"></script>
+</body>
+</html>
