@@ -29,7 +29,7 @@ body {
 }
 
 /* Field of play */
-.led-display {
+.field-of-play {
     background: #000;
     width: 400px;
     height: 170px;
@@ -40,7 +40,7 @@ body {
     margin-bottom: 20px;
 }
 
-.field-line {
+.field-grid-line {
     position: absolute;
     background: #333;
     height: 100%;
@@ -57,7 +57,7 @@ body {
 .yard-80 { left: 320px; }
 .yard-90 { left: 360px; }
 
-.led {
+.field {
     position: absolute;
     width: 16px;
     height: 4px;
@@ -67,12 +67,20 @@ body {
     transition: all 0.1s ease;
 }
 
-.led.off {
+.field.end-zone.off {
+    background: #a0a0a0;  /* Lighter than the default #330000 */
+}
+
+.field.end-zone {
+    background: #4a1a1a;  /* Lighter red for active end-zone LEDs */
+}
+
+.field.off {
     background: #330000;
     box-shadow: none;
 }
 
-.led.player {
+.field.player {
     background: #00ff00;
     box-shadow: 0 0 8px #00ff00;
 }

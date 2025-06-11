@@ -1,14 +1,16 @@
-const NROWS = 20;
-const NCOLS = 50;
-const START_LINE = 20; // Which yard line to start at
-const START_X = 5;
-const START_Y = 7;
-const GOAL_LINE = 45;
-const TURN_DELAY = 500; // Controls speed of defenders turns
+const Y_MAX = 20;
+const X_MAX = 55;
+const X_START = 5;              // start the runner 5 pixels from scrimmage
+const Y_START = 7;
+const X_ENDZONE = 5;            // make the end zone 5 pixels wide
+const FIRST_DOWN_YARDAGE = 10;  // How many yards is a first down?
+
+const GOAL_LINE_PIXEL = X_MAX - X_START - X_ENDZONE;
+const YARDS_PER_PIXEL = GOAL_LINE_PIXEL / FIRST_DOWN_YARDAGE ;
+const TURN_DELAY = 500; // Amount to delay between defenders' turns
 const MIN_DELAY = 150; // Don't let the speed get too fast
-const BLINKS = 3; // How many times to blink the LEDs at end of play
+const BLINKS = 3; // How many times to blink the LEDs after tackle
 const BLINK_SPEED = 300;
-const HALO = 5; // Safety radius around player after tackle
 
 var isPaused = false;
 var defenderTimeoutId = null;
@@ -17,12 +19,11 @@ class LedFootball {
     constructor() {
         this.display = document.getElementById("display");
         this.gameRunning = false;
-        this.playerPos = { x: START_X, y: START_Y }; // Starting position
+        this.playerPos = { x: X_START, y: Y_START }; // Starting position
         this.defenders = [];
         this.score = 0;
         this.curdown = 1;
-        this.yardsToGo = 10;
-        this.fieldPosition = START_LINE; // Yards from goal line
+        this.yardsToGo = FIRST_DOWN_YARDAGE;// Yards from the goal line
         this.gameSpeed = TURN_DELAY;
         this.leds = [];
 
@@ -33,11 +34,13 @@ class LedFootball {
     initDisplay() {
         // Create LED grid (50x37 approximate LEDs)
         this.leds = [];
-        for (let y = 0; y < NROWS; y++) {
+        for (let y = 0; y < Y_MAX; y++) {
             this.leds[y] = [];
-            for (let x = 0; x < NCOLS; x++) {
+            for (let x = 0; x < X_MAX; x++) {
                 const led = document.createElement("div");
-                led.className = "led off";
+                led.className = "field off";
+                if (X_MAX - x < X_ENDZONE)
+                    led.classList.add("end-zone");
                 led.style.left = x * 8 + "px";
                 led.style.top = y * 8 + "px";
                 this.display.appendChild(led);
@@ -79,20 +82,8 @@ class LedFootball {
         this.gameRunning = true;
         this.score = 0;
         this.curdown = 1;
-        this.yardsToGo = 10;
-        this.fieldPosition = START_LINE;
-
-        this.playerPos = { x: START_X, y: START_Y };
-        /*
-         * 4 defenders in a diamond position.
-         * Either move horizontally or vertically.
-         */
-        this.defenders = [
-            { x: 20, y: 5, dx: 0, dy: 1 }, // High defender moves down
-            { x: 10, y: 10, dx: 1, dy: 0 }, // Front defender moves back
-            { x: 20, y: 15, dx: 0, dy: -1 }, // Low defender moves up
-            { x: 35, y: 10, dx: -1, dy: 0 } // Back defender moves forward
-        ];
+        this.yardsToGo = FIRST_DOWN_YARDAGE;
+        this.initialFormations();
 
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("gameOver").innerHTML = "";
@@ -102,12 +93,26 @@ class LedFootball {
         this.moveDefenders();
     }
 
+    initialFormations() {
+        this.playerPos = {x: X_START, y: Y_START};
+        /*
+         * 4 defenders in a diamond position.
+         * Either move horizontally or vertically.
+         */
+        this.defenders = [
+            {x: 20, y: 5, dx: 0, dy: 1}, // High defender moves down
+            {x: 10, y: 10, dx: 1, dy: 0}, // Front defender moves back
+            {x: 20, y: 15, dx: 0, dy: -1}, // Low defender moves up
+            {x: 35, y: 10, dx: -1, dy: 0} // Back defender moves forward
+        ];
+    }
+
     movePlayer(dx, dy) {
         if (!this.gameRunning) return;
 
-        // Move player and check for the boundaries
-        const newX = Math.max(0, Math.min(NCOLS, this.playerPos.x + dx));
-        const newY = Math.max(0, Math.min(NROWS, this.playerPos.y + dy));
+        // Move player, limited by the boundaries
+        const newX = Math.max(0, Math.min(X_MAX, this.playerPos.x + dx));
+        const newY = Math.max(0, Math.min(Y_MAX, this.playerPos.y + dy));
 
         this.playerPos.x = newX;
         this.playerPos.y = newY;
@@ -121,7 +126,7 @@ class LedFootball {
         }
 
         // Check for touchdown
-        if (this.playerPos.x >= GOAL_LINE) {
+        if (this.playerPos.x >= GOAL_LINE_PIXEL) {
             this.touchdown();
         }
 
@@ -138,32 +143,32 @@ class LedFootball {
             defender.y += defender.dy;
 
             // Bounce off walls
-            if (defender.x <= 0 || defender.x >= NCOLS) defender.dx *= -1;
-            if (defender.y <= 0 || defender.y >= NROWS) defender.dy *= -1;
+            if (defender.x <= 0 || defender.x >= X_MAX) defender.dx *= -1;
+            if (defender.y <= 0 || defender.y >= Y_MAX) defender.dy *= -1;
 
             // Slight homing behavior toward player
             const roll = Math.floor(Math.random() * 5);
             switch (roll) {
                 case 0:
-                    // moving horizontally toward player
+                    // Turn horizontally toward player
                     if (this.playerPos.x > defender.x) {
-                        defender.dx = Math.abs(defender.dx);
+                        defender.dx = 1;
                     } else {
-                        defender.dx = -Math.abs(defender.dx);
+                        defender.dx = -1;
                     }
                     break;
 
                 case 1:
-                    // moving vertically toward player
+                    // Turn vertically toward player
                     if (this.playerPos.y > defender.y) {
-                        defender.dy = Math.abs(defender.dy);
+                        defender.dy = 1;
                     } else {
-                        defender.dy = -Math.abs(defender.dy);
+                        defender.dy = -1;
                     }
                     break;
 
                 case 2:
-                    // Switch horizontal/vertical direction
+                    // Turn 90 degrees
                     if (defender.dx === 0) {
                         defender.dx = defender.dy;
                         defender.dy = 0;
@@ -174,16 +179,16 @@ class LedFootball {
                     break;
 
                 case 3:
-                    // Reverse in current direction
+                    // Turn 180 degrees
                     if (defender.dx === 0) {
                         defender.dy = -defender.dy;
                     } else {
-                        defender.dx = defender.dx;
+                        defender.dx = -defender.dx;
                     }
                     break;
 
                 default:
-                    // Coninue moving in same direction
+                    // Continue in same direction
                     break;
             }
         }
@@ -207,6 +212,9 @@ class LedFootball {
             return;
         }
 
+        // Update progress
+        this.yardsToGo = FIRST_DOWN_YARDAGE - Math.round(this.playerPos.x / YARDS_PER_PIXEL);
+
         // a. Set the pause flag
         isPaused = true;
 
@@ -214,15 +222,14 @@ class LedFootball {
         clearTimeout(defenderTimeoutId);
 
         // c. Tackling animation
-        this.blinkDefenders();
+        this.playOver();
     }
 
     touchdown() {
         this.score += 7;
-        this.fieldPosition = START_LINE;
         this.curdown = 1;
-        this.yardsToGo = 10;
-        this.playerPos.x = START_X;
+        this.yardsToGo = FIRST_DOWN_YARDAGE;
+        this.playerPos.x = X_START;
 
         // Add more defenders
         /* disable for now 
@@ -246,23 +253,31 @@ class LedFootball {
 
     updateDisplay() {
         // Clear all LEDs
-        for (let y = 0; y < NROWS; y++) {
-            for (let x = 0; x < NCOLS; x++) {
-                this.leds[y][x].className = "led off";
+        for (let y = 0; y < Y_MAX; y++) {
+            for (let x = 0; x < X_MAX; x++) {
+                this.leds[y][x].className = "field off";
+                // Add end-zone class for x positions at the field end
+                if (x >= GOAL_LINE_PIXEL) {
+                    this.leds[y][x].classList.add("end-zone");
+                }
             }
         }
 
         // Draw player (green)
-        if (this.playerPos.y < NROWS && this.playerPos.x < NCOLS) {
-            this.leds[this.playerPos.y][this.playerPos.x].className = "led player";
+        if (this.playerPos.y < Y_MAX && this.playerPos.x < X_MAX) {
+            this.leds[this.playerPos.y][this.playerPos.x].className = "field player";
         }
 
         // Draw defenders (red)
         for (let defender of this.defenders) {
             const x = Math.round(defender.x);
             const y = Math.round(defender.y);
-            if (y >= 0 && y < NROWS && x >= 0 && x < NCOLS) {
-                this.leds[y][x].className = "led";
+            if (y >= 0 && y < Y_MAX && x >= 0 && x < X_MAX) {
+                this.leds[y][x].className = "field";
+                // Add end-zone class for defenders in the end zone
+                if (x >= GOAL_LINE_PIXEL) {
+                    this.leds[y][x].classList.add("end-zone");
+                }
             }
         }
     }
@@ -273,8 +288,8 @@ class LedFootball {
         document.getElementById("yards").textContent = this.yardsToGo;
     }
 
-    blinkDefenders() {
-        doBlink([0, this]);
+    playOver() {
+        endOfPlay([0, this]);
     }
 }
 
