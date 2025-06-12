@@ -5,9 +5,9 @@ const Y_START = 7;
 const X_ENDZONE = 5;            // make the end zone 5 pixels wide
 const FIRST_DOWN_YARDAGE = 10;  // How many yards is a first down?
 
-const GOAL_LINE_PIXEL = X_MAX - X_START - X_ENDZONE;
+const GOAL_LINE_PIXEL = X_MAX - X_ENDZONE;
 const YARDS_PER_PIXEL = GOAL_LINE_PIXEL / FIRST_DOWN_YARDAGE ;
-const TURN_DELAY = 500; // Amount to delay between defenders' turns
+const TURN_DELAY = 500; // Initial pause between defenders' turns
 const MIN_DELAY = 150; // Don't let the speed get too fast
 const BLINKS = 3; // How many times to blink the LEDs after tackle
 const BLINK_SPEED = 300;
@@ -24,27 +24,27 @@ class LedFootball {
         this.score = 0;
         this.curdown = 1;
         this.yardsToGo = FIRST_DOWN_YARDAGE;// Yards from the goal line
-        this.gameSpeed = TURN_DELAY;
-        this.leds = [];
+        this.gameSpeed = TURN_DELAY;        // number of milliseconds between defender turns
+        this.field = [];
 
         this.initDisplay();
         this.setupControls();
     }
 
     initDisplay() {
-        // Create LED grid (50x37 approximate LEDs)
-        this.leds = [];
-        for (let y = 0; y < Y_MAX; y++) {
-            this.leds[y] = [];
-            for (let x = 0; x < X_MAX; x++) {
+        // Create LED grid X_MAX x Y_MAX
+        this.field = [];
+        for (let y = 0; y <=Y_MAX; y++) {
+            this.field[y] = [];
+            for (let x = 0; x <= X_MAX; x++) {
                 const led = document.createElement("div");
                 led.className = "field off";
-                if (X_MAX - x < X_ENDZONE)
+                if (x > GOAL_LINE_PIXEL)
                     led.classList.add("end-zone");
                 led.style.left = x * 8 + "px";
                 led.style.top = y * 8 + "px";
                 this.display.appendChild(led);
-                this.leds[y][x] = led;
+                this.field[y][x] = led;
             }
         }
     }
@@ -58,6 +58,11 @@ class LedFootball {
         // Keyboard controls
         document.addEventListener("keydown", (e) => {
             if (!this.gameRunning) return;
+
+            // Prevent default for arrow keys
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
 
             if (!isPaused) {
                 switch (e.key) {
@@ -78,20 +83,27 @@ class LedFootball {
         });
     }
 
-    start() {
+    gameStart() {
+        document.getElementById("startBtn").style.display = "none";
+        document.getElementById("gameOver").innerHTML = "";
+
         this.gameRunning = true;
         this.score = 0;
         this.curdown = 1;
         this.yardsToGo = FIRST_DOWN_YARDAGE;
+
         this.initialFormations();
-
-        document.getElementById("startBtn").style.display = "none";
-        document.getElementById("gameOver").innerHTML = "";
-
         this.updateDisplay();
         this.updateStats();
         this.moveDefenders();
     }
+
+    gameOver() {
+        this.gameRunning = false;
+        document.getElementById("gameOver").innerHTML = "GAME OVER";
+        document.getElementById("startBtn").style.display = "inline-block";
+    }
+
 
     initialFormations() {
         this.playerPos = {x: X_START, y: Y_START};
@@ -100,7 +112,7 @@ class LedFootball {
          * Either move horizontally or vertically.
          */
         this.defenders = [
-            {x: 20, y: 5, dx: 0, dy: 1}, // High defender moves down
+            {x: 20, y: 5, dx: 0, dy: 1}, // High defender, moves down
             {x: 10, y: 10, dx: 1, dy: 0}, // Front defender moves back
             {x: 20, y: 15, dx: 0, dy: -1}, // Low defender moves up
             {x: 35, y: 10, dx: -1, dy: 0} // Back defender moves forward
@@ -245,38 +257,32 @@ class LedFootball {
         this.updateStats();
     }
 
-    gameOver() {
-        this.gameRunning = false;
-        document.getElementById("gameOver").innerHTML = "GAME OVER";
-        document.getElementById("startBtn").style.display = "inline-block";
-    }
-
     updateDisplay() {
         // Clear all LEDs
-        for (let y = 0; y < Y_MAX; y++) {
-            for (let x = 0; x < X_MAX; x++) {
-                this.leds[y][x].className = "field off";
+        for (let y = 0; y <= Y_MAX; y++) {
+            for (let x = 0; x <= X_MAX; x++) {
+                this.field[y][x].className = "field off";
                 // Add end-zone class for x positions at the field end
-                if (x >= GOAL_LINE_PIXEL) {
-                    this.leds[y][x].classList.add("end-zone");
+                if (x > GOAL_LINE_PIXEL) {
+                    this.field[y][x].classList.add("end-zone");
                 }
             }
         }
 
         // Draw player (green)
-        if (this.playerPos.y < Y_MAX && this.playerPos.x < X_MAX) {
-            this.leds[this.playerPos.y][this.playerPos.x].className = "field player";
+        if (this.playerPos.y <= Y_MAX && this.playerPos.x <= X_MAX) {
+            this.field[this.playerPos.y][this.playerPos.x].className = "field player";
         }
 
         // Draw defenders (red)
         for (let defender of this.defenders) {
             const x = Math.round(defender.x);
             const y = Math.round(defender.y);
-            if (y >= 0 && y < Y_MAX && x >= 0 && x < X_MAX) {
-                this.leds[y][x].className = "field";
-                // Add end-zone class for defenders in the end zone
-                if (x >= GOAL_LINE_PIXEL) {
-                    this.leds[y][x].classList.add("end-zone");
+            if (y >= 0 && y <= Y_MAX && x >= 0 && x <= X_MAX) {
+                this.field[y][x].className = "field";
+                // Add end-zone
+                if (x > GOAL_LINE_PIXEL) {
+                    this.field[y][x].classList.add("end-zone");
                 }
             }
         }
@@ -293,17 +299,12 @@ class LedFootball {
     }
 }
 
-let game;
+var game;
 
 // "New Game" button click handler
 function startGame() {
     if (!game) {
         game = new LedFootball();
     }
-    game.start();
+    game.gameStart();
 }
-
-// Initialize the game when page loads
-window.addEventListener("load", () => {
-    game = new LedFootball();
-});
