@@ -6,14 +6,14 @@ const X_ENDZONE = 5;            // make the end zone 5 pixels wide
 const FIRST_DOWN_YARDAGE = 10;  // How many yards is a first down?
 
 const GOAL_LINE_PIXEL = X_MAX - X_ENDZONE;
-const YARDS_PER_PIXEL = GOAL_LINE_PIXEL / FIRST_DOWN_YARDAGE ;
-const TURN_DELAY = 500; // Initial pause between defenders' turns
-const MIN_DELAY = 150; // Don't let the speed get too fast
+const YARDS_PER_PIXEL = GOAL_LINE_PIXEL / FIRST_DOWN_YARDAGE;
 const BLINKS = 3; // How many times to blink the LEDs after tackle
 const BLINK_SPEED = 300;
+const MOVE_DELAY = 500; // ms pause between defenders' turns. This will adjust during game play
+const MIN_DELAY = 150; // Don't let the defenders get too fast
 
 var isPaused = false;
-var defenderTimeoutId = null;
+var lastTimeout = 0;
 
 class LedFootball {
     constructor() {
@@ -23,9 +23,12 @@ class LedFootball {
         this.defenders = [];
         this.score = 0;
         this.curdown = 1;
-        this.yardsToGo = FIRST_DOWN_YARDAGE;// Yards from the goal line
-        this.gameSpeed = TURN_DELAY;        // number of milliseconds between defender turns
+        this.yardsToGo = FIRST_DOWN_YARDAGE; // Yards from the goal line
+        this.gameSpeed = MOVE_DELAY;        // number of milliseconds between defender turns
         this.field = [];
+        this.animationFrameId = null;
+        this.lastTimestamp = 0;
+        this.accumulator = 0;
 
         this.initDisplay();
         this.setupControls();
@@ -34,13 +37,14 @@ class LedFootball {
     initDisplay() {
         // Create LED grid X_MAX x Y_MAX
         this.field = [];
-        for (let y = 0; y <=Y_MAX; y++) {
+        for (let y = 0; y <= Y_MAX; y++) {
             this.field[y] = [];
             for (let x = 0; x <= X_MAX; x++) {
                 const led = document.createElement("div");
                 led.className = "field off";
-                if (x > GOAL_LINE_PIXEL)
+                if (x > GOAL_LINE_PIXEL) {
                     led.classList.add("end-zone");
+                }
                 led.style.left = x * 8 + "px";
                 led.style.top = y * 8 + "px";
                 this.display.appendChild(led);
@@ -48,6 +52,7 @@ class LedFootball {
             }
         }
     }
+
 
     setupControls() {
         document.getElementById("up").addEventListener("click", () => this.movePlayer(0, -1));
@@ -83,6 +88,7 @@ class LedFootball {
         });
     }
 
+
     gameStart() {
         document.getElementById("startBtn").style.display = "none";
         document.getElementById("gameOver").innerHTML = "";
@@ -91,38 +97,44 @@ class LedFootball {
         this.score = 0;
         this.curdown = 1;
         this.yardsToGo = FIRST_DOWN_YARDAGE;
+        this.lastTimestamp = 0;
+        this.accumulator = 0;
+        isPaused = false;
 
         this.initialFormations();
         this.updateDisplay();
         this.updateStats();
-        this.moveDefenders();
+
+        // Start the game loop
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+        this.animationFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
     }
 
     gameOver() {
         this.gameRunning = false;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
         document.getElementById("gameOver").innerHTML = "GAME OVER";
         document.getElementById("startBtn").style.display = "inline-block";
     }
 
-
     initialFormations() {
-        this.playerPos = {x: X_START, y: Y_START};
-        /*
-         * 4 defenders in a diamond position.
-         * Either move horizontally or vertically.
-         */
+        this.playerPos = { x: X_START, y: Y_START };
         this.defenders = [
-            {x: 20, y: 5, dx: 0, dy: 1}, // High defender, moves down
-            {x: 10, y: 10, dx: 1, dy: 0}, // Front defender moves back
-            {x: 20, y: 15, dx: 0, dy: -1}, // Low defender moves up
-            {x: 35, y: 10, dx: -1, dy: 0} // Back defender moves forward
+            { x: 20, y: 5, dx: 0, dy: 1 },
+            { x: 10, y: 10, dx: 1, dy: 0 },
+            { x: 20, y: 15, dx: 0, dy: -1 },
+            { x: 35, y: 10, dx: -1, dy: 0 }
         ];
     }
 
     movePlayer(dx, dy) {
         if (!this.gameRunning) return;
 
-        // Move player, limited by the boundaries
         const newX = Math.max(0, Math.min(X_MAX, this.playerPos.x + dx));
         const newY = Math.max(0, Math.min(Y_MAX, this.playerPos.y + dy));
 
@@ -137,18 +149,16 @@ class LedFootball {
             }
         }
 
+
         // Check for touchdown
         if (this.playerPos.x >= GOAL_LINE_PIXEL) {
             this.touchdown();
         }
 
+
         this.updateDisplay();
     }
-
-    moveDefenders() {
-        if (!this.gameRunning) return;
-        if (isPaused) return;
-
+    updateDefenders() {
         // Move defenders
         for (let defender of this.defenders) {
             defender.x += defender.dx;
@@ -205,16 +215,45 @@ class LedFootball {
             }
         }
 
+
         // Check collisions
         for (let defender of this.defenders) {
-            if (Math.abs(this.playerPos.x - defender.x) <= 1 && Math.abs(this.playerPos.y - defender.y) <= 1) {
+            if (Math.abs(this.playerPos.x - defender.x) <= 1 &&
+                Math.abs(this.playerPos.y - defender.y) <= 1) {
                 this.tackled();
-                return;
+                return false; // Collision occurred
             }
         }
+        return true; // No collision
+    }
 
-        this.updateDisplay();
-        defenderTimeoutId = setTimeout(() => this.moveDefenders(), this.gameSpeed);
+    gameLoop(timestamp = 0) {
+        if (!this.gameRunning) return;
+
+        if (!this.lastTimestamp) {
+            this.lastTimestamp = timestamp;
+        }
+
+        const deltaTime = timestamp - this.lastTimestamp;
+        this.lastTimestamp = timestamp;
+
+        if (!isPaused) {
+            // Update game state at a fixed interval
+            this.accumulator += deltaTime;
+            const fixedTimeStep = this.gameSpeed;
+
+            while (this.accumulator >= fixedTimeStep) {
+                if (!this.updateDefenders()) {
+                    break; // Stop updates if collision occurred
+                }
+                this.accumulator -= fixedTimeStep;
+            }
+
+            this.updateDisplay();
+        }
+
+
+        this.animationFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
     }
 
     tackled() {
@@ -226,14 +265,17 @@ class LedFootball {
 
         // Update progress
         this.yardsToGo = FIRST_DOWN_YARDAGE - Math.round(this.playerPos.x / YARDS_PER_PIXEL);
-
-        // a. Set the pause flag
+        
+        // Set the pause flag
         isPaused = true;
 
-        // b. Stop any currently scheduled defender moves
-        clearTimeout(defenderTimeoutId);
+        // Stop the game loop
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
 
-        // c. Tackling animation
+        // Start tackling animation
         this.playOver();
     }
 
@@ -243,20 +285,10 @@ class LedFootball {
         this.yardsToGo = FIRST_DOWN_YARDAGE;
         this.playerPos.x = X_START;
 
-        // Add more defenders
-        /* disable for now 
-        this.defenders.push({
-            x: Math.random() * 40 + 10,
-            y: Math.random() * 30 + 3,
-            dx: (Math.random() > 0.5 ? 1 : -1),
-            dy: (Math.random() > 0.5 ? 1 : -1)
-        });*/
-
         // Bump up the speed by reducing the delay
         this.gameSpeed = Math.max(MIN_DELAY, this.gameSpeed - 10);
         this.updateStats();
     }
-
     updateDisplay() {
         // Clear all LEDs
         for (let y = 0; y <= Y_MAX; y++) {
@@ -287,13 +319,11 @@ class LedFootball {
             }
         }
     }
-
     updateStats() {
         document.getElementById("score").textContent = this.score;
         document.getElementById("downs").textContent = this.curdown;
         document.getElementById("yards").textContent = this.yardsToGo;
     }
-
     playOver() {
         endOfPlay([0, this]);
     }
