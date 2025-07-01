@@ -9,11 +9,13 @@ const GOAL_LINE_PIXEL = X_MAX - X_ENDZONE;
 const YARDS_PER_PIXEL = GOAL_LINE_PIXEL / FIRST_DOWN_YARDAGE;
 const BLINKS = 3; // How many times to blink the LEDs after tackle
 const BLINK_SPEED = 300;
-const MOVE_DELAY = 500; // ms pause between defenders' turns. This will adjust during game play
+const MOVE_DELAY = 500; // ms to pause between defenders' turns. This will adjust during game play
 const MIN_DELAY = 150; // Don't let the defenders get too fast
 
+/* Game play variables */
+var game = undefined;
 var isPaused = false;
-var lastTimeout = 0;
+var isKeyDown = false; // Prevent holding down the arrow keys
 
 class LedFootball {
     constructor() {
@@ -69,7 +71,8 @@ class LedFootball {
                 e.preventDefault();
             }
 
-            if (!isPaused) {
+            if (!isPaused && !isKeyDown) {
+                isKeyDown = true;
                 switch (e.key) {
                     case "ArrowUp":
                         this.movePlayer(0, -1);
@@ -86,6 +89,10 @@ class LedFootball {
                 }
             }
         });
+        document.addEventListener("keyup", (e) => {
+            isKeyDown = false;
+        });
+
     }
 
 
@@ -322,14 +329,12 @@ class LedFootball {
     updateStats() {
         document.getElementById("score").textContent = this.score;
         document.getElementById("downs").textContent = this.curdown;
-        document.getElementById("yards").textContent = this.yardsToGo;
+        document.getElementById("yards").textContent = this.yardsToGo.toString();
     }
     playOver() {
         endOfPlay([0, this]);
     }
 }
-
-var game;
 
 // "New Game" button click handler
 function startGame() {
