@@ -92,7 +92,6 @@ class LedFootball {
         document.addEventListener("keyup", (e) => {
             isKeyDown = false;
         });
-
     }
 
 
@@ -156,12 +155,10 @@ class LedFootball {
             }
         }
 
-
         // Check for touchdown
         if (this.playerPos.x >= GOAL_LINE_PIXEL) {
             this.touchdown();
         }
-
 
         this.updateDisplay();
     }
