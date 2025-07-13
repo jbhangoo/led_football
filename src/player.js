@@ -7,16 +7,22 @@ function movePlayer(dx, dy) {
 
     gameState.playerPos.x = newX;
     gameState.playerPos.y = newY;
+    gameState.curyard += dx*YARDS_PER_PIXEL;
+    console.log('Moved ' + dx + ' to ' + gameState.curyard);
 
     // Check for collision with defenders
     if (checkCollisions()) {
-        tacklePlayer();
+        tackled();
         return;
     }
 
     // Check for touchdown
-    if (gameState.playerPos.x >= GOAL_LINE_PIXEL) {
-        touchdown();
+    if (gameState.playerPos.x >= X_GOAL_LINE) {
+        if (gameState.curyard > TOTAL_YARDS) {
+            touchdown();
+        } else {
+            firstdown();
+        }
     }
 }
 
@@ -28,9 +34,18 @@ function getPlayerPosition() {
     return { ...gameState.playerPos };
 }
 
+function firstdown() {
+    // Reset down status but let player keep running
+    gameState.curdown = 1;
+    gameState.yardsToGo = FIRST_DOWN_YARDAGE;
+    gameState.playerPos.x = X_START;
+}
+
 function touchdown() {
+    // Play stops at touchdown and resets
     gameState.score += 7;
     gameState.curdown = 1;
+    gameState.curyard = 0;
     gameState.yardsToGo = FIRST_DOWN_YARDAGE;
     resetPlayer();
 

@@ -23,7 +23,7 @@ function endOfPlay(args) {
             if (y >= 0 && y <= Y_MAX && x >= 0 && x <= X_MAX) {
                 field[y][x].className = "field";
                 // Add end-zone
-                if (x > GOAL_LINE_PIXEL) {
+                if (x > X_GOAL_LINE) {
                     field[y][x].classList.add("end-zone");
                 }
             }

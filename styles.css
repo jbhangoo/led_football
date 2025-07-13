@@ -127,7 +127,7 @@ body {
 .game-info {
     display: flex;
     justify-content: space-between;
-    width: 400px;
+    width: 425px;
     margin-bottom: 20px;
     font-size: 18px;
 }

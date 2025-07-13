@@ -46,12 +46,6 @@ function setupControls({ onUp, onDown, onLeft, onRight }) {
     });
 }
 
-function updateStats() {
-    document.getElementById("score").textContent = gameState.score;
-    document.getElementById("downs").textContent = gameState.curdown;
-    document.getElementById("yards").textContent = gameState.yardsToGo.toString();
-}
-
 function showGameOver() {
     document.getElementById("gameOver").innerHTML = "GAME OVER";
     document.getElementById("startBtn").style.display = "inline-block";
@@ -65,7 +59,6 @@ function hideStartButton() {
 // Make functions globally available
 window.ui = {
     setupControls,
-    updateStats,
     showGameOver,
     hideStartButton
 };

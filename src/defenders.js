@@ -25,50 +25,52 @@ function moveDefenders() {
             defender.y = Math.max(0, Math.min(Y_MAX, defender.y));
         }
 
-        // Only change direction occasionally (1 in 10 chance)
-        if (Math.random() < 0.1) {
-            const roll = Math.floor(Math.random() * 5);
-            switch (roll) {
-                case 0:
-                    // Turn horizontally toward player
-                    if (gameState.playerPos.x > defender.x) {
-                        defender.dx = 1;
-                        defender.dy = 0;
-                    } else {
-                        defender.dx = -1;
-                        defender.dy = 0;
-                    }
-                    break;
-
-                case 1:
-                    // Turn vertically toward player
-                    if (gameState.playerPos.y > defender.y) {
-                        defender.dy = 1;
-                        defender.dx = 0;
-                    } else {
-                        defender.dy = -1;
-                        defender.dx = 0;
-                    }
-                    break;
-
-                case 2:
-                    // Turn 90 degrees
-                    if (defender.dx === 0) {
-                        defender.dx = defender.dy;
-                        defender.dy = 0;
-                    } else {
-                        defender.dy = defender.dx;
-                        defender.dx = 0;
-                    }
-                    break;
-
-                case 3:
-                    // Turn 180 degrees
-                    defender.dx = -defender.dx;
-                    defender.dy = -defender.dy;
-                    break;
+        // Change direction with random probability
+        const r = Math.random();
+        if (r < 0.3) {
+            // 30%: Turn horizontally toward player
+            if (gameState.playerPos.x > defender.x) {
+                defender.dx = 1;
+                defender.dy = 0;
+            } else {
+                defender.dx = -1;
+                defender.dy = 0;
             }
+        } else if (r < 0.6) {
+            // 30%: Turn vertically toward player
+            if (gameState.playerPos.y > defender.y) {
+                defender.dy = 1;
+                defender.dx = 0;
+            } else {
+                defender.dy = -1;
+                defender.dx = 0;
+            }
+        } else if (r < 0.70) {
+            // 10%: Turn 90 degrees right
+            if (defender.dx === 0) {
+                defender.dx = defender.dy;
+                defender.dy = 0;
+            } else {
+                defender.dy = defender.dx;
+                defender.dx = 0;
+            }
+        } else if (r < 0.80) {
+            // 10%: Turn 90 degrees left
+            if (defender.dx === 0) {
+                defender.dx = -defender.dy;
+                defender.dy = 0;
+            } else {
+                defender.dy = -defender.dx;
+                defender.dx = 0;
+            }
+        } else if (r < 0.90) {
+            // 10%: Turn around (180 degrees)
+            defender.dx = -defender.dx;
+            defender.dy = -defender.dy;
+        } else {
+            // 10%: No change, continue as before
         }
+
     }
 
     // Check for collisions after movement
@@ -93,7 +95,7 @@ function checkCollisions() {
     return false; // No collision
 }
 
-function tacklePlayer() {
+function tackled() {
     gameState.curdown++;
     if (gameState.curdown > 4) {
         gameState.gameOver();
@@ -101,7 +103,7 @@ function tacklePlayer() {
     }
 
     // Update progress
-    gameState.yardsToGo = FIRST_DOWN_YARDAGE - Math.round(gameState.playerPos.x / (GOAL_LINE_PIXEL / FIRST_DOWN_YARDAGE));
+    gameState.yardsToGo = FIRST_DOWN_YARDAGE - Math.round(gameState.playerPos.x / (X_GOAL_LINE / FIRST_DOWN_YARDAGE));
     
     // Set the pause flag
     gameState.isPaused = true;
@@ -120,10 +122,10 @@ function tacklePlayer() {
 
 function resetDefenders() {
     gameState.defenders = [
-        { x: 20, y: 5, dx: 0, dy: 1 },
-        { x: 10, y: 10, dx: 1, dy: 0 },
-        { x: 20, y: 15, dx: 0, dy: -1 },
-        { x: 35, y: 10, dx: -1, dy: 0 }
+        { x: 20, y: 5, dx: 1, dy: 0 },      // Left Linebacker; Goes Back
+        { x: 10, y: 10, dx: 0, dy: -1 },    // Nose Guard; Goes Right
+        { x: 20, y: 15, dx: -1, dy: 0 },    // Right Linebacker; Rushes Forward
+        { x: 35, y: 10, dx: 0, dy: 1 }      // Safety; Goes Left
     ];
 }
 
@@ -131,6 +133,6 @@ function resetDefenders() {
 window.defenders = {
     moveDefenders,
     checkCollisions,
-    tacklePlayer,
+    tackled,
     resetDefenders
 };

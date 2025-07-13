@@ -9,6 +9,7 @@ const gameState = {
     defenders: [],
     score: 0,
     curdown: 1,
+    curyard: X_START*YARDS_PER_PIXEL,
     yardsToGo: FIRST_DOWN_YARDAGE,
     gameSpeed: MOVE_DELAY,
     lastTimestamp: 0,
@@ -51,11 +52,11 @@ const gameState = {
 
             // Handle collision if one was detected
             if (collisionDetected) {
-                tacklePlayer();
+                tackled();
             }
 
             updateField();
-            updateStats();
+            this.updateStats();
         }
 
         this.animationFrameId = requestAnimationFrame((ts) => this.gameLoop(ts));
@@ -67,6 +68,7 @@ const gameState = {
         this.gameRunning = true;
         this.score = 0;
         this.curdown = 1;
+        this.curyard = 0;
         this.yardsToGo = FIRST_DOWN_YARDAGE;
         this.gameSpeed = MOVE_DELAY;
         this.lastTimestamp = 0;
@@ -76,7 +78,7 @@ const gameState = {
         resetPlayer();
         resetDefenders();
         updateField();
-        updateStats();
+        this.updateStats();
 
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
@@ -101,7 +103,7 @@ const gameState = {
         this.initialFormations();
         
         // Update the display
-        this.updateField();
+        updateField();
         this.updateStats();
         
         // Clear any pending animation frame
@@ -134,6 +136,7 @@ const gameState = {
         document.getElementById("score").textContent = this.score;
         document.getElementById("downs").textContent = this.curdown;
         document.getElementById("yards").textContent = this.yardsToGo.toString();
+        document.getElementById("line").textContent = Math.round(this.curyard * 10) / 10;
     }
 };
 

@@ -16,7 +16,7 @@ function createFieldGrid(displayElement) {
         for (let x = 0; x <= X_MAX; x++) {
             const led = document.createElement("div");
             led.className = "field off";
-            if (x > GOAL_LINE_PIXEL) {
+            if (x > X_GOAL_LINE) {
                 led.classList.add("end-zone");
             }
             led.style.left = x * 8 + "px";
@@ -35,7 +35,7 @@ function updateField() {
         for (let x = 0; x <= X_MAX; x++) {
             field[y][x].className = "field off";
             // Add end-zone class for x positions at the field end
-            if (x > GOAL_LINE_PIXEL) {
+            if (x > X_GOAL_LINE) {
                 field[y][x].classList.add("end-zone");
             }
         }
@@ -53,7 +53,7 @@ function updateField() {
         if (y >= 0 && y <= Y_MAX && x >= 0 && x <= X_MAX) {
             field[y][x].className = "field defender";
             // Add end-zone
-            if (x > GOAL_LINE_PIXEL) {
+            if (x > X_GOAL_LINE) {
                 field[y][x].classList.add("end-zone");
             }
         }
